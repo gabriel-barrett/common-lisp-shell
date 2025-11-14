@@ -14,9 +14,12 @@
 (defun display-prompt ()
   "Displays the shell's prompt through *PROMPT*"
   (if (functionp *prompt*)
-	  (let ((ret (funcall *prompt*)))
-		(when ret (format t ret)))
-	  (format t "~a" *prompt*))
+	  (handler-case
+		  (let ((ret (funcall *prompt*)))
+			(when ret (format t ret)))
+		(error (e)
+		  (format t "Prompt failing with error `~A`. Please fix the *PROMPT* variable.~%CLSH> " e)))
+	  (format t "~A" *prompt*))
   (finish-output))
 
 (defun change-directory (path)
@@ -30,17 +33,25 @@
 	  (t
 	   (error "Directory does not exist: ~A" (namestring resolved-path))))))
 
-(defun repl ()
-  "The Common Lisp Shell. A Common Lisp REPL with core facilities built-in."
-  (in-package :clsh)
-  (catch :exit-repl
-	(loop
-	  (display-prompt)
-	  (handler-case
-		  (format t "~s~%" (eval (read *standard-input*)))
-		(error (e)
-		  (format t "Error: ~s~%" e))))))
+(define-condition exit (error) ()
+  (:documentation "Condition to exit the shell"))
 
 (defun exit ()
   "Exits the Common Lisp Shell."
-  (throw :exit-repl nil))
+  (signal 'exit))
+
+(defun repl ()
+  "The Common Lisp Shell. A Common Lisp REPL with core facilities built-in."
+  (let ((*package* (find-package :clsh)))
+	(loop
+	  (display-prompt)
+	  (handler-case (format t "~S~%" (eval (read *standard-input*)))
+		(sb-sys:interactive-interrupt (c) (declare (ignore c))
+		  (terpri))
+		(exit (e) (declare (ignore e))
+		  (return))
+		(end-of-file (e) (declare (ignore e))
+		  (terpri)
+		  (return))
+		(error (e)
+		  (format t "Error: ~S~%" e))))))
