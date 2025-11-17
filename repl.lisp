@@ -40,12 +40,23 @@
   "Exits the Common Lisp Shell."
   (signal 'exit))
 
+(defun read-command (stream)
+  "Reads expressions until it finds a newline and collects them into a list."
+  (loop :for expr := (read-preserving-whitespace stream)
+		:collect expr
+		:until (loop :for char := (peek-char nil stream)
+					 :when (equal char #\;)
+					   :do (progn (read-line stream) (return t))
+					 :while (member char '(#\Space #\Tab))
+					 :do (read-char stream)
+					 :finally (return (equal char #\Newline)))))
+
 (defun repl ()
   "The Common Lisp Shell. A Common Lisp REPL with core facilities built-in."
   (let ((*package* (find-package :clsh)))
 	(loop
 	  (display-prompt)
-	  (handler-case (format t "~S~%" (eval (read *standard-input*)))
+	  (handler-case (format t "~S~%" (eval (read-command *standard-input*)))
 		(sb-sys:interactive-interrupt (c) (declare (ignore c))
 		  (terpri))
 		(exit (e) (declare (ignore e))
@@ -55,3 +66,6 @@
 		  (return))
 		(error (e)
 		  (format t "Error: ~S~%" e))))))
+
+;; Command synonyms
+(setf (fdefinition 'cd) #'change-directory)
