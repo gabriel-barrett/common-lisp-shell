@@ -1,4 +1,5 @@
 (asdf:defsystem "clsh"
   :serial t
-  :components ((:file "repl")
-               (:file "utils")))
+  :components ((:file "package")
+			   (:file "utils" :depends-on ("package"))
+               (:file "repl" :depends-on ("package"))))

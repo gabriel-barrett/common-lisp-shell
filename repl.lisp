@@ -1,8 +1,3 @@
-(defpackage :common-lisp-shell
-  (:use :common-lisp)
-  (:nicknames :clsh)
-  (:export :repl :exit :read-command :display-prompt :*prompt*))
-
 (in-package :clsh)
 
 (defvar *prompt* "CLSH> "
@@ -39,7 +34,8 @@
 
 (defun repl ()
   "The Common Lisp Shell. A Common Lisp REPL with core facilities built-in."
-  (let ((*package* (find-package :clsh-utils)))
+  (let ((*package* (find-package :clsh)))
+	(initial-setup)
 	(loop
 	  (display-prompt)
 	  (handler-case (format t "~S~%" (eval (read-command *standard-input*)))
