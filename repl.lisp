@@ -23,7 +23,7 @@
 
 (defun read-command (stream)
   "Reads expressions until it finds a newline and collects them into a list."
-  (loop :for expr := (read-preserving-whitespace stream)
+  (loop :for expr := (eclector.reader:read-preserving-whitespace stream)
 		:collect expr
 		:until (loop :for char := (peek-char nil stream)
 					 :when (equal char #\;)
